@@ -30,3 +30,12 @@
 *.exe
 *.out
 *.app
+
+# Other
+*.ncb
+*.suo
+*.pdb
+*.ilk
+*.idb
+*.dep
+*.user
