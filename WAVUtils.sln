@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WAVUtils", "WAVUtils\WAVUtils.vcproj", "{782AD07D-FEA4-47C8-AD74-F11CC49872A8}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Bread", "Bread\Bread.vcproj", "{8A76DF02-6B57-4477-AEA2-033A70A60832}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -15,10 +13,6 @@ Global
 		{782AD07D-FEA4-47C8-AD74-F11CC49872A8}.Debug|Win32.Build.0 = Debug|Win32
 		{782AD07D-FEA4-47C8-AD74-F11CC49872A8}.Release|Win32.ActiveCfg = Release|Win32
 		{782AD07D-FEA4-47C8-AD74-F11CC49872A8}.Release|Win32.Build.0 = Release|Win32
-		{8A76DF02-6B57-4477-AEA2-033A70A60832}.Debug|Win32.ActiveCfg = Debug|Win32
-		{8A76DF02-6B57-4477-AEA2-033A70A60832}.Debug|Win32.Build.0 = Debug|Win32
-		{8A76DF02-6B57-4477-AEA2-033A70A60832}.Release|Win32.ActiveCfg = Release|Win32
-		{8A76DF02-6B57-4477-AEA2-033A70A60832}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
