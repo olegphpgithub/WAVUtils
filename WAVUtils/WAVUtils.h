@@ -37,7 +37,6 @@ public:
 	void TrimHeader();
 	void Close();
 	void AddTrack(char *payloadFilePath);
-	void CreateWAVFile();
 	void ReadHeader();
 	void ReadTrackToFile(DWORD track, char *outputFilePath);
 	void ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *size);

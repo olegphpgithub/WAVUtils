@@ -103,12 +103,6 @@ void WAVUtils::AddTrack(char* payloadFilePath)
 
 }
 
-void WAVUtils::CreateWAVFile()
-{
-	InitHeader();
-	fwrite((void *)&WAVHeader, sizeof(WAVHeader), 1, wavFile);
-}
-
 void WAVUtils::ReadHeader()
 {
 	fseek(wavFile, 0, SEEK_SET);
@@ -143,17 +137,20 @@ void WAVUtils::ReadTrackToFile(DWORD track, char *outputFilePath)
 void WAVUtils::ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *size)
 {
 	fseek(wavFile, WAVHeader.BodyHeader[track].offset, SEEK_SET);
-	*pointer = new unsigned char[WAVHeader.BodyHeader[track].size];
-	fread(*pointer, WAVHeader.BodyHeader[track].size, 1, wavFile);
+	size_t m_size = WAVHeader.BodyHeader[track].size;
+	unsigned char *m_data = new unsigned char[m_size];
+	fread(m_data, m_size, 1, wavFile);
 	
 	/** +++++ Decryption +++++ */
 	
-	int  res = DecryptCodeSection(cryptographic_key, *pointer, WAVHeader.BodyHeader[track].size);
+	int  res = DecryptCodeSection(cryptographic_key, m_data, m_size);
 	
 	/** ----- Decryption ----- */
 	
-	*pointer = *pointer + 8;
-	*size = WAVHeader.BodyHeader[track].size - 8;
+	*pointer = new unsigned char[m_size - 8];
+	memcpy_s(*pointer, m_size - 8, m_data + 8, m_size - 8);
+	*size = m_size - 8;
+	delete[] m_data;
 }
 
 int isFileExists(const char *filename) {
@@ -193,13 +190,13 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		/** Read to file */
 
-		//wav.ReadTrackToFile(1, payloadFilePath);
+		wav.ReadTrackToFile(0, payloadFilePath);
 
 		/** Read to memory */
 		
-		unsigned char *p;
-		DWORD dw;
-		wav.ReadTrackToMemory(0, &p, &dw);
+		//unsigned char *p;
+		//DWORD dw;
+		//wav.ReadTrackToMemory(0, &p, &dw);
 		
 	}
 	
