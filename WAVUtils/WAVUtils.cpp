@@ -43,7 +43,13 @@ WAVUtils::WAVUtils(const unsigned char *pszWAVBuffer, size_t nWAVBuffer, const c
 	: m_pszWAVBuffer(pszWAVBuffer)
 	, m_nWAVBuffer(nWAVBuffer)
 {
+
+	ZeroMemory(this->cryptographic_key, 1024);
+	strcpy_s(this->cryptographic_key, 1024, pszCryptographicKey);
+
 	ZeroMemory(WAVHeader.BodyHeader, sizeof(WAVHeader.BodyHeader));
+	ReadHeader();
+
 }
 
 void WAVUtils::InitHeader()
@@ -121,7 +127,7 @@ void WAVUtils::AddTrack(char* payloadFilePath)
 void WAVUtils::ReadHeader()
 {
 	if(m_pszWAVBuffer != NULL) {
-		memcpy_s((void *)&WAVHeader, sizeof(WAVHeader), m_pszWAVBuffer, m_nWAVBuffer);
+		memcpy_s((void *)&WAVHeader, sizeof(WAVHeader), m_pszWAVBuffer, sizeof(WAVHeader));
 	} else {
 		fseek(wavFile, 0, SEEK_SET);
 		fread((void *)&WAVHeader, sizeof(WAVHeader), 1, wavFile);
@@ -163,7 +169,7 @@ void WAVUtils::ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *si
 		m_start = m_pszWAVBuffer + WAVHeader.BodyHeader[track].offset;
 		m_size = WAVHeader.BodyHeader[track].size;
 		m_data = new unsigned char[m_size];
-		memcpy_s((void *)&m_data, m_size, m_start, m_size);
+		memcpy_s((void *)m_data, m_size, m_start, m_size);
 	} else {
 		fseek(wavFile, WAVHeader.BodyHeader[track].offset, SEEK_SET);
 		m_size = WAVHeader.BodyHeader[track].size;
@@ -181,6 +187,7 @@ void WAVUtils::ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *si
 	memcpy_s(*pointer, m_size - 8, m_data + 8, m_size - 8);
 	*size = m_size - 8;
 	delete[] m_data;
+
 }
 
 void WAVUtils::chacha20_core(void* input, void* output)
