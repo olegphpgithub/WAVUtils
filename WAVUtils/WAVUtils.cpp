@@ -1,14 +1,19 @@
 
 #include <stdio.h>
+#include <fstream>
 #include <math.h>
 #include <time.h>
 #include <windows.h>
 #include <tchar.h>
 
-#include "CrypUtils.h"
+#include "MD5.h"
 #include "WAVUtils.h"
 
-WAVUtils::WAVUtils(char *lpcWAVFilePath, char *lpcCryptographicKey)
+#define R(v, n)(((v) >> (n)) | ((v) << (32 - (n))))
+#define F(n) for (i = 0; i < n; i++)
+#define X(a, b)(t) = (a), (a) = (b), (b) = (t)
+
+WAVUtils::WAVUtils(const char *lpcWAVFilePath, const char *lpcCryptographicKey)
 {
 	ZeroMemory(this->wavFilePath, MAX_PATH);
 	strcpy_s(this->wavFilePath, MAX_PATH, lpcWAVFilePath);
@@ -153,55 +158,92 @@ void WAVUtils::ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *si
 	delete[] m_data;
 }
 
-int isFileExists(const char *filename) {
-	FILE *file;
-	errno_t err = fopen_s(&file, filename, "r");
-	if (err == 0){
-		fclose(file);
-		return 1;
-	}
-	return 0;
-}
-
-
-int _tmain(int argc, _TCHAR* argv[])
+void WAVUtils::chacha20_core(void* input, void* output)
 {
-	if(argc != 5) {
-		printf("Usage: prog.exe import/export <WAVFile> <PayloadFile> <Key>");
-		return 1;
+	unsigned int a, b, c, d, i, t, r, *s = (unsigned*)input, *x = (unsigned*)output;
+	unsigned int v[8] = {
+		0xC840, 0xD951, 0xEA62, 0xFB73,
+		0xFA50, 0xCB61, 0xD872, 0xE943
+	};
+
+	F(16)x[i] = s[i];
+
+	F(80)
+	{
+		d = v[i % 8];
+		a = (d & 15);
+		b = (d >> 4 & 15);
+		c = (d >> 8 & 15);
+		d >>= 12;
+
+		for (r = 0x19181410; r; r >>= 8)
+			x[a] += x[b], x[d] = R(x[d] ^ x[a], (r & 255)), X(a, c), X(b, d);
 	}
-
-	char payloadFilePath[MAX_PATH];
-	ZeroMemory(payloadFilePath, MAX_PATH);
-	strcpy_s(payloadFilePath, MAX_PATH, argv[3]);
-
-	WAVUtils wav(argv[2], argv[4]);
-
-	if(_strcmpi(argv[1], "import") == 0) {
-
-		if(!isFileExists(payloadFilePath)) {
-			printf("PayloadFile does not exist.\n");
-			return 1;
-		}
-		
-		wav.AddTrack(payloadFilePath);
-
-	} else {
-
-		/** Read to file */
-
-		wav.ReadTrackToFile(0, payloadFilePath);
-
-		/** Read to memory */
-		
-		//unsigned char *p;
-		//DWORD dw;
-		//wav.ReadTrackToMemory(0, &p, &dw);
-		
-	}
-	
-	wav.Close();
-
-	return 0;
+	F(16)x[i] += s[i];
 }
+
+void WAVUtils::chacha20_setkey(chacha20_ctx* c, void* key, void* nonce)
+{
+	unsigned int *k = (unsigned int*)key, *n = (unsigned int*)nonce;
+	int i;
+
+	c->w[0] = 0x61707865;
+	c->w[1] = 0x3320646E;
+	c->w[2] = 0x79622D32;
+	c->w[3] = 0x6B206574;
+
+	F(8)c->w[i + 4] = k[i];
+	c->w[12] = 0;
+	c->w[13] = 0;
+	F(2)c->w[i + 14] = n[i];
+}
+
+void WAVUtils::chacha20_encrypt(chacha20_ctx* ctx, void* in, unsigned int len)
+{
+	unsigned char c[64], *p = (unsigned char*)in;
+	unsigned int i, r;
+
+	if (len)
+	{
+		while (len)
+		{
+			chacha20_core(ctx, c);
+			ctx->q[6]++;
+			r = (len > 64) ? 64 : len;
+			F(r)p[i] ^= c[i];
+			len -= r;
+			p += r;
+		}
+	}
+}
+
+int WAVUtils::DecryptCodeSection(char* cryptKey, unsigned char *raw_data, unsigned int raw_size)
+{
+	std::string skey = MD5String(cryptKey);
+	srand((unsigned int)time(NULL));
+
+	chacha20_ctx c20_ctx;
+	chacha20_setkey(&c20_ctx, (unsigned char*)skey.c_str(), raw_data);
+	chacha20_encrypt(&c20_ctx, raw_data+8, raw_size-8);
+
+	return 1;
+}
+
+int WAVUtils::EncryptCodeSection(char* cryptKey, unsigned char *raw_data, unsigned int raw_size)
+{
+	std::string skey = MD5String(cryptKey);
+
+	srand((unsigned int)time(NULL));
+
+	for (int i = 0; i < 8; i++)
+		raw_data[i] = (char)rand();
+
+	chacha20_ctx c20_ctx;
+	chacha20_setkey(&c20_ctx, (unsigned char*)skey.c_str(), raw_data);
+	chacha20_encrypt(&c20_ctx, raw_data+8, raw_size-8);
+
+	return 1;
+
+}
+
 

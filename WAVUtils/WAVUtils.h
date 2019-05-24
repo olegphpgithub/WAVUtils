@@ -1,3 +1,11 @@
+#pragma once
+
+typedef union _chacha20_ctx_t
+{
+	unsigned char b[64];
+	unsigned int w[16];
+	long long q[8];
+} chacha20_ctx;
 
 class WAVUtils {
 public:
@@ -31,7 +39,7 @@ public:
 	char cryptographic_key[1024];
 	FILE* wavFile;
 	
-	WAVUtils(char *lpcWAVFilePath, char *lpcCryptographicKey);
+	WAVUtils(const char *lpcWAVFilePath, const char *lpcCryptographicKey);
 
 	void InitHeader();
 	void TrimHeader();
@@ -40,5 +48,10 @@ public:
 	void ReadHeader();
 	void ReadTrackToFile(DWORD track, char *outputFilePath);
 	void ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *size);
+	void chacha20_core(void* input, void* output);
+	void chacha20_setkey(chacha20_ctx* c, void* key, void* nonce);
+	void chacha20_encrypt(chacha20_ctx* ctx, void* in, unsigned int len);
+	int DecryptCodeSection(char*, unsigned char*, unsigned int);
+	int EncryptCodeSection(char*, unsigned char*, unsigned int);
 
 };
