@@ -37,9 +37,12 @@ public:
 	char wavFilePath[MAX_PATH];
 	char payloadFilePath[MAX_PATH];
 	char cryptographic_key[1024];
+	const unsigned char *m_pszWAVBuffer;
+	const size_t m_nWAVBuffer;
 	FILE* wavFile;
 	
 	WAVUtils(const char *lpcWAVFilePath, const char *lpcCryptographicKey);
+	WAVUtils(const unsigned char *pszWAVBuffer, size_t nWAVBuffer, const char *pszCryptographicKey);
 
 	void InitHeader();
 	void TrimHeader();

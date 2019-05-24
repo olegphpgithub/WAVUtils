@@ -14,7 +14,10 @@
 #define X(a, b)(t) = (a), (a) = (b), (b) = (t)
 
 WAVUtils::WAVUtils(const char *lpcWAVFilePath, const char *lpcCryptographicKey)
+	: m_pszWAVBuffer(NULL)
+	, m_nWAVBuffer(0)
 {
+
 	ZeroMemory(this->wavFilePath, MAX_PATH);
 	strcpy_s(this->wavFilePath, MAX_PATH, lpcWAVFilePath);
 
@@ -33,7 +36,14 @@ WAVUtils::WAVUtils(const char *lpcWAVFilePath, const char *lpcCryptographicKey)
 		fopen_s(&wavFile, wavFilePath, "wb");
 		InitHeader();
 	}
-	
+
+}
+
+WAVUtils::WAVUtils(const unsigned char *pszWAVBuffer, size_t nWAVBuffer, const char *pszCryptographicKey)
+	: m_pszWAVBuffer(pszWAVBuffer)
+	, m_nWAVBuffer(nWAVBuffer)
+{
+	ZeroMemory(WAVHeader.BodyHeader, sizeof(WAVHeader.BodyHeader));
 }
 
 void WAVUtils::InitHeader()
@@ -110,8 +120,12 @@ void WAVUtils::AddTrack(char* payloadFilePath)
 
 void WAVUtils::ReadHeader()
 {
-	fseek(wavFile, 0, SEEK_SET);
-	fread((void *)&WAVHeader, sizeof(WAVHeader), 1, wavFile);
+	if(m_pszWAVBuffer != NULL) {
+		memcpy_s((void *)&WAVHeader, sizeof(WAVHeader), m_pszWAVBuffer, m_nWAVBuffer);
+	} else {
+		fseek(wavFile, 0, SEEK_SET);
+		fread((void *)&WAVHeader, sizeof(WAVHeader), 1, wavFile);
+	}
 }
 
 void WAVUtils::ReadTrackToFile(DWORD track, char *outputFilePath)
@@ -141,14 +155,25 @@ void WAVUtils::ReadTrackToFile(DWORD track, char *outputFilePath)
 
 void WAVUtils::ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *size)
 {
-	fseek(wavFile, WAVHeader.BodyHeader[track].offset, SEEK_SET);
-	size_t m_size = WAVHeader.BodyHeader[track].size;
-	unsigned char *m_data = new unsigned char[m_size];
-	fread(m_data, m_size, 1, wavFile);
+	const unsigned char *m_start;
+	size_t m_size;
+	unsigned char *m_data;
+
+	if(m_pszWAVBuffer != NULL) {
+		m_start = m_pszWAVBuffer + WAVHeader.BodyHeader[track].offset;
+		m_size = WAVHeader.BodyHeader[track].size;
+		m_data = new unsigned char[m_size];
+		memcpy_s((void *)&m_data, m_size, m_start, m_size);
+	} else {
+		fseek(wavFile, WAVHeader.BodyHeader[track].offset, SEEK_SET);
+		m_size = WAVHeader.BodyHeader[track].size;
+		m_data = new unsigned char[m_size];
+		fread(m_data, m_size, 1, wavFile);
+	}
 	
 	/** +++++ Decryption +++++ */
 	
-	int  res = DecryptCodeSection(cryptographic_key, m_data, m_size);
+	int res = DecryptCodeSection(cryptographic_key, m_data, m_size);
 	
 	/** ----- Decryption ----- */
 	

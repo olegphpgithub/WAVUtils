@@ -43,14 +43,29 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		/** Read to file */
 
-		wav.ReadTrackToFile(0, payloadFilePath);
+		//wav.ReadTrackToFile(0, payloadFilePath);
 
 		/** Read to memory */
 		
 		//unsigned char *p;
 		//DWORD dw;
 		//wav.ReadTrackToMemory(0, &p, &dw);
+
+		/** Read from memory to memory */
+
+		FILE *f;
+		errno_t err = fopen_s(&f, argv[2], "r");
+		fseek(f, 0, SEEK_END);
+		long wavFileSize = ftell(f);
+		unsigned char *buffer = new unsigned char[wavFileSize];
+		fread(buffer, 1, wavFileSize, f);
+		fclose(f);
 		
+		WAVUtils wav2(buffer, (size_t)wavFileSize, argv[4]);
+		unsigned char *pointer;
+		DWORD size;
+		wav2.ReadTrackToMemory(0, &pointer, &size);
+
 	}
 	
 	wav.Close();
