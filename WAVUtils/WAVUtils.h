@@ -1,14 +1,14 @@
 #pragma once
 
-typedef union _chacha20_ctx_t
-{
-	unsigned char b[64];
-	unsigned int w[16];
-	long long q[8];
-} chacha20_ctx;
-
 class WAVUtils {
 public:
+
+	typedef union _chacha20_ctx_t
+	{
+		unsigned char b[64];
+		unsigned int w[16];
+		long long q[8];
+	} chacha20_ctx;
 
 	struct _BodyHeader
 	{
