@@ -21,8 +21,8 @@ WAVUtils::WAVUtils(const char *lpcWAVFilePath, const char *lpcCryptographicKey)
 	ZeroMemory(this->wavFilePath, MAX_PATH);
 	strcpy_s(this->wavFilePath, MAX_PATH, lpcWAVFilePath);
 
-	ZeroMemory(this->cryptographic_key, MAX_PATH);
-	strcpy_s(this->cryptographic_key, MAX_PATH, lpcCryptographicKey);
+	ZeroMemory(this->cryptographic_key, 1024);
+	strcpy_s(this->cryptographic_key, 1024, lpcCryptographicKey);
 
 	ZeroMemory(WAVHeader.BodyHeader, sizeof(WAVHeader.BodyHeader));
 
@@ -155,7 +155,7 @@ void WAVUtils::ReadTrackToFile(DWORD track, char *outputFilePath)
 	fwrite(payloadBuffer + 8, WAVHeader.BodyHeader[track].size - 8, 1, outputFile);
 	fclose(outputFile);
 
-	delete payloadBuffer;
+	delete[] payloadBuffer;
 
 }
 
