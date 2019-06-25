@@ -134,21 +134,21 @@ void WAVUtils::ReadHeader()
 	}
 }
 
-void WAVUtils::ReadTrackToFile(DWORD track, char *outputFilePath)
+errno_t WAVUtils::ReadTrackToFile(DWORD track, char *outputFilePath)
 {
 	if(WAVHeader.NumberOfTracks < 1)
-		return;
+		return ERROR_ASSERTION_FAILURE;
 	FILE* outputFile;
 	errno_t err = fopen_s(&outputFile, outputFilePath, "wb");
 	if (err != 0)
-		return;
+		return err;
 	fseek(wavFile, WAVHeader.BodyHeader[track].offset, SEEK_SET);
 	unsigned char* payloadBuffer = new unsigned char[WAVHeader.BodyHeader[track].size];
 	fread(payloadBuffer, WAVHeader.BodyHeader[track].size, 1, wavFile);
 	
 	/** +++++ Decryption +++++ */
 	
-	int  res = DecryptCodeSection(cryptographic_key, payloadBuffer, WAVHeader.BodyHeader[track].size);
+	errno_t result = DecryptCodeSection(cryptographic_key, payloadBuffer, WAVHeader.BodyHeader[track].size);
 	
 	/** ----- Decryption ----- */
 
@@ -156,10 +156,11 @@ void WAVUtils::ReadTrackToFile(DWORD track, char *outputFilePath)
 	fclose(outputFile);
 
 	delete[] payloadBuffer;
-
+	
+	return result;
 }
 
-void WAVUtils::ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *size)
+errno_t WAVUtils::ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *size)
 {
 	const unsigned char *m_start;
 	size_t m_size;
@@ -179,7 +180,7 @@ void WAVUtils::ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *si
 	
 	/** +++++ Decryption +++++ */
 	
-	int res = DecryptCodeSection(cryptographic_key, m_data, m_size);
+	errno_t result = DecryptCodeSection(cryptographic_key, m_data, m_size);
 	
 	/** ----- Decryption ----- */
 	
@@ -187,7 +188,9 @@ void WAVUtils::ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *si
 	memcpy_s(*pointer, m_size - 8, m_data + 8, m_size - 8);
 	*size = m_size - 8;
 	delete[] m_data;
-
+	
+	return result;
+	
 }
 
 void WAVUtils::chacha20_core(void* input, void* output)
@@ -249,7 +252,7 @@ void WAVUtils::chacha20_encrypt(chacha20_ctx* ctx, void* in, unsigned int len)
 	}
 }
 
-int WAVUtils::DecryptCodeSection(char* cryptKey, unsigned char *raw_data, unsigned int raw_size)
+errno_t WAVUtils::DecryptCodeSection(char* cryptKey, unsigned char *raw_data, unsigned int raw_size)
 {
 	std::string skey = MD5String(cryptKey);
 	srand((unsigned int)time(NULL));
@@ -258,10 +261,10 @@ int WAVUtils::DecryptCodeSection(char* cryptKey, unsigned char *raw_data, unsign
 	chacha20_setkey(&c20_ctx, (unsigned char*)skey.c_str(), raw_data);
 	chacha20_encrypt(&c20_ctx, raw_data+8, raw_size-8);
 
-	return 1;
+	return ERROR_SUCCESS;
 }
 
-int WAVUtils::EncryptCodeSection(char* cryptKey, unsigned char *raw_data, unsigned int raw_size)
+errno_t WAVUtils::EncryptCodeSection(char* cryptKey, unsigned char *raw_data, unsigned int raw_size)
 {
 	std::string skey = MD5String(cryptKey);
 
@@ -274,7 +277,7 @@ int WAVUtils::EncryptCodeSection(char* cryptKey, unsigned char *raw_data, unsign
 	chacha20_setkey(&c20_ctx, (unsigned char*)skey.c_str(), raw_data);
 	chacha20_encrypt(&c20_ctx, raw_data+8, raw_size-8);
 
-	return 1;
+	return ERROR_SUCCESS;
 
 }
 

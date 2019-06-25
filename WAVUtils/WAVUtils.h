@@ -49,12 +49,12 @@ public:
 	void Close();
 	void AddTrack(char *payloadFilePath);
 	void ReadHeader();
-	void ReadTrackToFile(DWORD track, char *outputFilePath);
-	void ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *size);
+	errno_t ReadTrackToFile(DWORD track, char *outputFilePath);
+	errno_t ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD *size);
 	void chacha20_core(void* input, void* output);
 	void chacha20_setkey(chacha20_ctx* c, void* key, void* nonce);
 	void chacha20_encrypt(chacha20_ctx* ctx, void* in, unsigned int len);
-	int DecryptCodeSection(char*, unsigned char*, unsigned int);
-	int EncryptCodeSection(char*, unsigned char*, unsigned int);
+	errno_t DecryptCodeSection(char*, unsigned char*, unsigned int);
+	errno_t EncryptCodeSection(char*, unsigned char*, unsigned int);
 
 };
