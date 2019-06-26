@@ -79,7 +79,9 @@ void WAVUtils::TrimHeader()
 
 void WAVUtils::Close()
 {
-	fclose(wavFile);
+	if(m_pszWAVBuffer == NULL) {
+		fclose(wavFile);
+	}
 }
 
 void WAVUtils::AddTrack(char* payloadFilePath)
