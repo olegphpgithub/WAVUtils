@@ -131,6 +131,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"
 				CommandLine="&quot;$(VCInstallDir)bin\lib.exe&quot; /out:$(TargetDir)$(ProjectName).lib &quot;$(ProjectDir)$(ConfigurationName)\*.obj&quot;"
+				ExcludedFromBuild="true"
 			/>
 			<Tool
 				Name="VCLinkerTool"
@@ -173,6 +174,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\CmdLineParser.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\main.cpp"
 				>
 			</File>
@@ -190,6 +195,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\CmdLineParser.h"
+				>
+			</File>
 			<File
 				RelativePath=".\MD5.h"
 				>
