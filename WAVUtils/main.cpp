@@ -18,26 +18,62 @@ int isFileExists(const char *filename) {
 }
 
 
+void testReadTrackFromMemoryToMemory(LPCTSTR path, LPCTSTR key, DWORD track)
+{
+	FILE *f;
+	errno_t err = fopen_s(&f, path, "rb");
+	DWORD dv = GetLastError();
+	fseek(f, 0, SEEK_END);
+	long wavFileSize = ftell(f);
+	unsigned char *buffer = new unsigned char[wavFileSize];
+	fseek(f, 0, SEEK_SET);
+	fread(buffer, 1, wavFileSize, f);
+	fclose(f);
+	
+	WAVUtils wav2(buffer, (size_t)wavFileSize, key);
+	unsigned char *pointer;
+	DWORD size;
+	wav2.ReadTrackToMemory(track, &pointer, &size);
+}
+
+
+void testReadTrackFromMemoryToFile(LPCTSTR path, LPCTSTR key, DWORD track, LPCTSTR payload)
+{
+	FILE *f;
+	errno_t err = fopen_s(&f, path, "rb");
+	DWORD dv = GetLastError();
+	fseek(f, 0, SEEK_END);
+	long wavFileSize = ftell(f);
+	unsigned char *buffer = new unsigned char[wavFileSize];
+	fseek(f, 0, SEEK_SET);
+	fread(buffer, 1, wavFileSize, f);
+	fclose(f);
+	
+	WAVUtils wav2(buffer, (size_t)wavFileSize, key);
+	wav2.ReadTrackToFile(track, (TCHAR*)payload);
+}
+
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 
 	CCmdLineParser realParser(::GetCommandLine());
 
-    bool ok = false;
-    do {
-        if ( (!realParser.HasKey(TEXT("ACTION")))
-            || (!realParser.HasKey(TEXT("WAV")))
+	bool ok = false;
+	do {
+		if ( (!realParser.HasKey(TEXT("ACTION")))
+			|| (!realParser.HasKey(TEXT("WAV")))
 			|| (!realParser.HasKey(TEXT("PAYLOAD")))
-            || (!realParser.HasKey(TEXT("KEY"))) ) {
-                break;
-        }
-        ok = true;
-    } while(false);
-    
-    if(!ok) {
+			|| (!realParser.HasKey(TEXT("KEY"))) ) {
+				break;
+		}
+		ok = true;
+	} while(false);
+
+	if(!ok) {
 		printf("Usage: prog.exe /ACTION=import/export /WAV=<WAVFile> /PAYLOAD=<PayloadFile> /KEY=<Key>");
 		return 1;
-    }
+	}
 
 	char payloadFilePath[MAX_PATH];
 	ZeroMemory(payloadFilePath, MAX_PATH);
@@ -62,29 +98,25 @@ int _tmain(int argc, _TCHAR* argv[])
 		WAVUtils wav(realParser.GetVal(_T("WAV")), realParser.GetVal(_T("KEY")));
 		wav.ReadTrackToFile(0, payloadFilePath);
 
-		/** Read to memory */
-		
-		//unsigned char *p;
-		//DWORD dw;
-		//wav.ReadTrackToMemory(0, &p, &dw);
+		/** Read from memory to memory */
+
+		/*
+		testReadTrackFromMemoryToMemory(
+			realParser.GetVal(_T("WAV")),
+			realParser.GetVal(_T("KEY")),
+			0
+		);
+		*/
 
 		/** Read from memory to memory */
 		
 		/*
-		FILE *f;
-		errno_t err = fopen_s(&f, realParser.GetVal(_T("WAV")), "r");
-		DWORD dv = GetLastError();
-		fseek(f, 0, SEEK_END);
-		long wavFileSize = ftell(f);
-		unsigned char *buffer = new unsigned char[wavFileSize];
-		fseek(f, 0, SEEK_SET);
-		fread(buffer, 1, wavFileSize, f);
-		fclose(f);
-		
-		WAVUtils wav2(buffer, (size_t)wavFileSize, realParser.GetVal(_T("KEY")));
-		unsigned char *pointer;
-		DWORD size;
-		wav2.ReadTrackToMemory(0, &pointer, &size);
+		testReadTrackFromMemoryToFile(
+			realParser.GetVal(_T("WAV")),
+			realParser.GetVal(_T("KEY")),
+			0,
+			payloadFilePath
+		);
 		*/
 
 	}
