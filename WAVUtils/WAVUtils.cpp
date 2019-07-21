@@ -82,6 +82,7 @@ void WAVUtils::Close()
 	if(m_pszWAVBuffer == NULL) {
 		fclose(wavFile);
 	}
+	SecureZeroMemory(cryptographic_key, 1024);
 }
 
 void WAVUtils::AddTrack(char* payloadFilePath)
@@ -138,26 +139,40 @@ void WAVUtils::ReadHeader()
 
 errno_t WAVUtils::ReadTrackToFile(DWORD track, char *outputFilePath)
 {
+	const unsigned char *m_start;
+	size_t m_size;
+	unsigned char *m_data;
+
 	if(WAVHeader.NumberOfTracks < 1)
 		return ERROR_ASSERTION_FAILURE;
 	FILE* outputFile;
 	errno_t err = fopen_s(&outputFile, outputFilePath, "wb");
 	if (err != 0)
 		return err;
-	fseek(wavFile, WAVHeader.BodyHeader[track].offset, SEEK_SET);
-	unsigned char* payloadBuffer = new unsigned char[WAVHeader.BodyHeader[track].size];
-	fread(payloadBuffer, WAVHeader.BodyHeader[track].size, 1, wavFile);
+
+	if(m_pszWAVBuffer != NULL) {
+		m_start = m_pszWAVBuffer + WAVHeader.BodyHeader[track].offset;
+		m_size = WAVHeader.BodyHeader[track].size;
+		m_data = new unsigned char[m_size];
+		memcpy_s((void *)m_data, m_size, m_start, m_size);
+	} else {
+		fseek(wavFile, WAVHeader.BodyHeader[track].offset, SEEK_SET);
+		m_size = WAVHeader.BodyHeader[track].size;
+		m_data = new unsigned char[m_size];
+		fread(m_data, m_size, 1, wavFile);
+	}
 	
 	/** +++++ Decryption +++++ */
 	
-	errno_t result = DecryptCodeSection(cryptographic_key, payloadBuffer, WAVHeader.BodyHeader[track].size);
+	errno_t result = DecryptCodeSection(cryptographic_key, m_data, m_size);
 	
 	/** ----- Decryption ----- */
 
-	fwrite(payloadBuffer + 8, WAVHeader.BodyHeader[track].size - 8, 1, outputFile);
+	fwrite(m_data + 8, m_size - 8, 1, outputFile);
 	fclose(outputFile);
 
-	delete[] payloadBuffer;
+	SecureZeroMemory(m_data, m_size);
+	delete[] m_data;
 	
 	return result;
 }
@@ -189,6 +204,8 @@ errno_t WAVUtils::ReadTrackToMemory(DWORD track, unsigned char **pointer, DWORD 
 	*pointer = new unsigned char[m_size - 8];
 	memcpy_s(*pointer, m_size - 8, m_data + 8, m_size - 8);
 	*size = m_size - 8;
+
+	SecureZeroMemory(m_data, m_size);
 	delete[] m_data;
 	
 	return result;
